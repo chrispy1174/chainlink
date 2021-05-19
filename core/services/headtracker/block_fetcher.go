@@ -73,6 +73,8 @@ func NewBlockFetcher(ethClient eth.Client, config BlockFetcherConfig, logger *lo
 		panic("") //TODO:
 	}
 
+	// rename BlockBackfillDepth to LogBackfillDepth ?
+	// use EthHeadTrackerHistoryDepth
 	if config.EthHeadTrackerHistoryDepth() > uint(config.BlockFetcherHistorySize()) {
 		panic("") //TODO:
 	}
