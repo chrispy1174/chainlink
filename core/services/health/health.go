@@ -124,7 +124,7 @@ func (c *checker) run() {
 func (c *checker) update() {
 	state := make(map[string]State, len(c.services))
 
-	c.srvMutex.Lock()
+	c.srvMutex.RLock()
 
 	for name, s := range c.services {
 		ready := s.Ready()
@@ -133,7 +133,7 @@ func (c *checker) update() {
 		state[name] = State{ready, healthy}
 	}
 
-	c.srvMutex.Unlock()
+	c.srvMutex.RUnlock()
 
 	// we use a separate lock to avoid holding the lock over state while talking
 	// to services
@@ -176,8 +176,8 @@ func (c *checker) Unregister(name string) error {
 }
 
 func (c *checker) IsReady() (ready bool, errors map[string]error) {
-	c.stateMutex.Lock()
-	defer c.stateMutex.Unlock()
+	c.stateMutex.RLock()
+	defer c.stateMutex.RUnlock()
 
 	ready = true
 	errors = make(map[string]error, len(c.services))
@@ -194,8 +194,8 @@ func (c *checker) IsReady() (ready bool, errors map[string]error) {
 }
 
 func (c *checker) IsHealthy() (healthy bool, errors map[string]error) {
-	c.stateMutex.Lock()
-	defer c.stateMutex.Unlock()
+	c.stateMutex.RLock()
+	defer c.stateMutex.RUnlock()
 
 	healthy = true
 	errors = make(map[string]error, len(c.services))
