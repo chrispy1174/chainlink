@@ -127,13 +127,16 @@ func TestIntegration_HttpRequestWithHeaders(t *testing.T) {
 		Run(func(args mock.Arguments) { chchNewHeads <- args.Get(1).(chan<- *models.Head) }).
 		Return(sub, nil)
 
-	ethClient.On("HeaderByNumber", mock.Anything, mock.AnythingOfType("*big.Int")).Return(cltest.Head(inLongestChain), nil)
+	ethClient.On("HeaderByNumber", mock.Anything, mock.AnythingOfType("*big.Int")).Maybe().Return(cltest.Head(inLongestChain), nil)
 	ethClient.On("Dial", mock.Anything).Return(nil)
 	ethClient.On("ChainID", mock.Anything).Return(config.ChainID(), nil)
 	ethClient.On("PendingNonceAt", mock.Anything, mock.Anything).Maybe().Return(uint64(0), nil)
 	ethClient.On("NonceAt", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(uint64(100), nil)
 	ethClient.On("BalanceAt", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(oneETH.ToInt(), nil)
-	ethClient.On("BatchCallContext", mock.Anything, mock.Anything).Maybe().Return(nil)
+	ethClient.On("BatchCallContext", mock.Anything, mock.MatchedBy(func(b []rpc.BatchElem) bool {
+		return len(b) != 1
+	})).Return(nil)
+
 	ethClient.On("FastBlockByHash", mock.Anything, mock.Anything).Maybe().Return(cltest.Block(0, cltest.NewHash()), nil)
 
 	ethClient.On("SendTransaction", mock.Anything, mock.Anything).
