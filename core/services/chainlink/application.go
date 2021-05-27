@@ -12,12 +12,16 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/smartcontractkit/chainlink/core/services/cron"
 	"github.com/smartcontractkit/chainlink/core/services/fluxmonitorv2"
 	"github.com/smartcontractkit/chainlink/core/services/gasupdater"
 	"github.com/smartcontractkit/chainlink/core/services/headtracker"
+	httypes "github.com/smartcontractkit/chainlink/core/services/headtracker/types"
 	"github.com/smartcontractkit/chainlink/core/services/keeper"
 	"github.com/smartcontractkit/chainlink/core/services/periodicbackup"
 	"github.com/smartcontractkit/chainlink/core/services/telemetry"
+	"github.com/smartcontractkit/chainlink/core/services/vrf"
+	"github.com/smartcontractkit/chainlink/core/services/webhook"
 	"gorm.io/gorm"
 
 	"github.com/gobuffalo/packr"
@@ -25,7 +29,6 @@ import (
 	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/chainlink/core/services"
 	"github.com/smartcontractkit/chainlink/core/services/bulletprooftxmanager"
-	"github.com/smartcontractkit/chainlink/core/services/cron"
 	"github.com/smartcontractkit/chainlink/core/services/directrequest"
 	"github.com/smartcontractkit/chainlink/core/services/eth"
 	"github.com/smartcontractkit/chainlink/core/services/fluxmonitor"
@@ -48,11 +51,6 @@ import (
 
 //go:generate mockery --name ExternalInitiatorManager --output ../../internal/mocks/ --case=underscore
 type (
-	// headTrackableCallback is a simple wrapper around an On Connect callback
-	headTrackableCallback struct {
-		onConnect func()
-	}
-
 	StartCloser interface {
 		Start() error
 		Close() error
@@ -65,14 +63,6 @@ type (
 	}
 )
 
-func (c *headTrackableCallback) Connect(*models.Head) error {
-	c.onConnect()
-	return nil
-}
-
-func (c *headTrackableCallback) Disconnect()                                    {}
-func (c *headTrackableCallback) OnNewLongestChain(context.Context, models.Head) {}
-
 //go:generate mockery --name Application --output ../../internal/mocks/ --case=underscore
 
 // Application implements the common functions used in the core node.
@@ -81,7 +71,9 @@ type Application interface {
 	Stop() error
 	GetLogger() *logger.Logger
 	GetStore() *strpkg.Store
+	GetOCRKeyStore() *offchainreporting.KeyStore // TODO: this should be replaced with a generic GetKeystore()
 	GetStatsPusher() synchronization.StatsPusher
+	GetHeadBroadcaster() httypes.HeadBroadcasterRegistry
 	WakeSessionReaper()
 	AddServiceAgreement(*models.ServiceAgreement) error
 	NewBox() packr.Box
@@ -96,10 +88,10 @@ type Application interface {
 	GetJobORM() job.ORM
 	AddJobV2(ctx context.Context, job job.Job, name null.String) (int32, error)
 	DeleteJobV2(ctx context.Context, jobID int32) error
+	RunWebhookJobV2(ctx context.Context, jobUUID models.JobID, pipelineInputs []pipeline.Result, meta pipeline.JSONSerializable) (int64, error)
 	// Testing only
 	RunJobV2(ctx context.Context, jobID int32, meta map[string]interface{}) (int64, error)
 	SetServiceLogger(ctx context.Context, service string, level zapcore.Level) error
-	services.RunManager
 }
 
 // ChainlinkApplication contains fields for the JobSubscriber, Scheduler,
@@ -108,23 +100,33 @@ type Application interface {
 type ChainlinkApplication struct {
 	Exiter          func(int)
 	HeadTracker     *services.HeadTracker
-	HeadBroadcaster *services.HeadBroadcaster
+	HeadBroadcaster *headtracker.HeadBroadcaster
 	StatsPusher     synchronization.StatsPusher
 	services.RunManager
-	RunQueue                 services.RunQueue
-	JobSubscriber            services.JobSubscriber
-	EthBroadcaster           bulletprooftxmanager.EthBroadcaster
-	LogBroadcaster           log.Broadcaster
-	EventBroadcaster         postgres.EventBroadcaster
-	JobORM                   job.ORM
-	jobSpawner               job.Spawner
-	pipelineRunner           pipeline.Runner
-	FluxMonitor              fluxmonitor.Service
-	Scheduler                *services.Scheduler
-	Store                    *strpkg.Store
+	RunQueue         services.RunQueue
+	JobSubscriber    services.JobSubscriber
+	EthBroadcaster   bulletprooftxmanager.EthBroadcaster
+	LogBroadcaster   log.Broadcaster
+	EventBroadcaster postgres.EventBroadcaster
+	JobORM           job.ORM
+	jobSpawner       job.Spawner
+	pipelineRunner   pipeline.Runner
+	FluxMonitor      fluxmonitor.Service
+	webhookJobRunner webhook.JobRunner
+	Scheduler        *services.Scheduler
+	Store            *strpkg.Store
+	// TODO:
+	// moved OCR keystore from store to application in order to resolve:
+	// https://app.clubhouse.io/chainlinklabs/story/10097/remove-ocr-as-dependency-of-store-package
+
+	// waiting on this before combining and moving other keystores
+	// https://github.com/smartcontractkit/chainlink/pull/4447
+
+	// finally, keystore unification will be completed by:
+	// https://app.clubhouse.io/chainlinklabs/story/7735/combine-keystores
+	OCRKeyStore              *offchainreporting.KeyStore
 	ExternalInitiatorManager ExternalInitiatorManager
 	SessionReaper            utils.SleeperTask
-	pendingConnectionResumer *pendingConnectionResumer
 	shutdownOnce             sync.Once
 	shutdownSignal           gracefulpanic.Signal
 	balanceMonitor           services.BalanceMonitor
@@ -142,7 +144,6 @@ type ChainlinkApplication struct {
 // be used by the node.
 func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker postgres.AdvisoryLocker, keyStoreGenerator strpkg.KeyStoreGenerator, externalInitiatorManager ExternalInitiatorManager, onConnectCallbacks ...func(Application)) (Application, error) {
 	var subservices []StartCloser
-	var headTrackables []strpkg.HeadTrackable
 
 	shutdownSignal := gracefulpanic.NewSignal()
 	store, err := strpkg.NewStore(config, ethClient, advisoryLocker, shutdownSignal, keyStoreGenerator)
@@ -151,6 +152,8 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 	}
 
 	setupConfig(config, store)
+
+	headBroadcaster := headtracker.NewHeadBroadcaster()
 
 	explorerClient := synchronization.ExplorerClient(&synchronization.NoopExplorerClient{})
 	statsPusher := synchronization.StatsPusher(&synchronization.NoopStatsPusher{})
@@ -167,8 +170,8 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 	if store.Config.GasUpdaterEnabled() {
 		logger.Debugw("GasUpdater: dynamic gas updates are enabled", "ethGasPriceDefault", store.Config.EthGasPriceDefault())
 		gasUpdater := gasupdater.NewGasUpdater(blockFetcher, store.Config)
+		headBroadcaster.SubscribeUntilClose(gasUpdater)
 		subservices = append(subservices, gasUpdater)
-		headTrackables = append(headTrackables, gasUpdater)
 	} else {
 		logger.Debugw("GasUpdater: dynamic gas updating is disabled", "ethGasPriceDefault", store.Config.EthGasPriceDefault())
 	}
@@ -215,7 +218,6 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 	fluxMonitor := fluxmonitor.New(store, runManager, logBroadcaster)
 	ethBroadcaster := bulletprooftxmanager.NewEthBroadcaster(store, config, eventBroadcaster)
 	ethConfirmer := bulletprooftxmanager.NewEthConfirmer(store, config)
-	headBroadcaster := services.NewHeadBroadcaster()
 
 	subservices = append(subservices, promReporter)
 
@@ -243,6 +245,7 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 				config,
 			),
 			job.Keeper: keeper.NewDelegate(store.DB, jobORM, pipelineRunner, store.EthClient, headBroadcaster, logBroadcaster, config),
+			job.VRF:    vrf.NewDelegate(vrf.NewORM(store.DB), pipelineRunner, pipelineORM),
 		}
 	)
 
@@ -265,15 +268,18 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 		)
 	}
 
+	scryptParams := utils.GetScryptParams(config)
+	ocrKeyStore := offchainreporting.NewKeyStore(store.DB, scryptParams)
+
 	if (config.Dev() && config.P2PListenPort() > 0) || config.FeatureOffchainReporting() {
 		logger.Debug("Off-chain reporting enabled")
-		concretePW := offchainreporting.NewSingletonPeerWrapper(store.OCRKeyStore, config, store.DB)
+		concretePW := offchainreporting.NewSingletonPeerWrapper(ocrKeyStore, config, store.DB)
 		subservices = append(subservices, concretePW)
 		delegates[job.OffchainReporting] = offchainreporting.NewDelegate(
 			store.DB,
 			jobORM,
 			config,
-			store.OCRKeyStore,
+			ocrKeyStore,
 			pipelineRunner,
 			ethClient,
 			logBroadcaster,
@@ -284,6 +290,13 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 		logger.Debug("Off-chain reporting disabled")
 	}
 
+	var webhookJobRunner webhook.JobRunner
+	if config.Dev() || config.FeatureWebhookV2() {
+		delegate := webhook.NewDelegate(pipelineRunner)
+		delegates[job.Webhook] = delegate
+		webhookJobRunner = delegate.WebhookJobRunner()
+	}
+
 	if config.Dev() || config.FeatureCronV2() {
 		delegates[job.Cron] = cron.NewDelegate(pipelineRunner)
 	}
@@ -292,8 +305,6 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 	subservices = append(subservices, jobSpawner, pipelineRunner, ethBroadcaster, ethConfirmer, headBroadcaster)
 
 	store.NotifyNewEthTx = ethBroadcaster
-
-	pendingConnectionResumer := newPendingConnectionResumer(runManager)
 
 	app := &ChainlinkApplication{
 		HeadBroadcaster:          headBroadcaster,
@@ -308,12 +319,13 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 		StatsPusher:              statsPusher,
 		RunManager:               runManager,
 		RunQueue:                 runQueue,
+		webhookJobRunner:         webhookJobRunner,
 		Scheduler:                services.NewScheduler(store, runManager),
 		Store:                    store,
+		OCRKeyStore:              ocrKeyStore,
 		SessionReaper:            services.NewStoreReaper(store),
 		Exiter:                   os.Exit,
 		ExternalInitiatorManager: externalInitiatorManager,
-		pendingConnectionResumer: pendingConnectionResumer,
 		shutdownSignal:           shutdownSignal,
 		balanceMonitor:           balanceMonitor,
 		explorerClient:           explorerClient,
@@ -323,24 +335,23 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 		subservices: subservices,
 	}
 
-	headTrackables = append(
-		headTrackables,
-		logBroadcaster,
-		ethConfirmer,
-		jobSubscriber,
-		pendingConnectionResumer,
-		balanceMonitor,
-		promReporter,
-		headBroadcaster,
-	)
+	headBroadcaster.SubscribeUntilClose(logBroadcaster)
+	headBroadcaster.SubscribeUntilClose(promReporter)
+	headBroadcaster.SubscribeUntilClose(ethConfirmer)
+	headBroadcaster.SubscribeUntilClose(jobSubscriber)
+	headBroadcaster.SubscribeUntilClose(balanceMonitor)
+
+	headBroadcaster.SubscribeForConnectUntilClose(func() error {
+		return runManager.ResumeAllPendingConnection()
+	})
 
 	for _, onConnectCallback := range onConnectCallbacks {
-		headTrackable := &headTrackableCallback{func() {
+		headBroadcaster.SubscribeForConnectUntilClose(func() error {
 			onConnectCallback(app)
-		}}
-		headTrackables = append(headTrackables, headTrackable)
+			return nil
+		})
 	}
-	app.HeadTracker = services.NewHeadTracker(headTrackerLogger, store, blockFetcher, headTrackables)
+	app.HeadTracker = services.NewHeadTracker(headTrackerLogger, store, headBroadcaster, blockFetcher
 
 	// Log Broadcaster uses the last stored head as a limit of log backfill
 	// which needs to be set before it's started
@@ -553,6 +564,10 @@ func (app *ChainlinkApplication) GetStore() *strpkg.Store {
 	return app.Store
 }
 
+func (app *ChainlinkApplication) GetOCRKeyStore() *offchainreporting.KeyStore {
+	return app.OCRKeyStore
+}
+
 func (app *ChainlinkApplication) GetLogger() *logger.Logger {
 	return app.logger
 }
@@ -563,6 +578,10 @@ func (app *ChainlinkApplication) GetJobORM() job.ORM {
 
 func (app *ChainlinkApplication) GetExternalInitiatorManager() ExternalInitiatorManager {
 	return app.ExternalInitiatorManager
+}
+
+func (app *ChainlinkApplication) GetHeadBroadcaster() httypes.HeadBroadcasterRegistry {
+	return app.HeadBroadcaster
 }
 
 func (app *ChainlinkApplication) GetStatsPusher() synchronization.StatsPusher {
@@ -593,8 +612,20 @@ func (app *ChainlinkApplication) AddJobV2(ctx context.Context, job job.Job, name
 	return app.jobSpawner.CreateJob(ctx, job, name)
 }
 
+func (app *ChainlinkApplication) DeleteJobV2(ctx context.Context, jobID int32) error {
+	return app.jobSpawner.DeleteJob(ctx, jobID)
+}
+
+func (app *ChainlinkApplication) RunWebhookJobV2(ctx context.Context, jobUUID models.JobID, pipelineInputs []pipeline.Result, meta pipeline.JSONSerializable) (int64, error) {
+	return app.webhookJobRunner.RunJob(ctx, jobUUID, pipelineInputs, meta)
+}
+
 // Only used for testing, not supported by the UI.
-func (app *ChainlinkApplication) RunJobV2(ctx context.Context, jobID int32, meta map[string]interface{}) (int64, error) {
+func (app *ChainlinkApplication) RunJobV2(
+	ctx context.Context,
+	jobID int32,
+	meta map[string]interface{},
+) (int64, error) {
 	if !app.Store.Config.Dev() {
 		return 0, errors.New("manual job runs only supported in dev mode - export CHAINLINK_DEV=true to use.")
 	}
@@ -607,7 +638,7 @@ func (app *ChainlinkApplication) RunJobV2(ctx context.Context, jobID int32, meta
 	// Keeper jobs are special in that they do not have a task graph.
 	if jb.Type == job.Keeper {
 		t := time.Now()
-		runID, err = app.pipelineRunner.InsertFinishedRun(ctx, pipeline.Run{
+		runID, err = app.pipelineRunner.InsertFinishedRun(app.Store.DB.WithContext(ctx), pipeline.Run{
 			PipelineSpecID: jb.PipelineSpecID,
 			Errors:         pipeline.RunErrors{null.String{}},
 			Outputs:        pipeline.JSONSerializable{Val: "queued eth transaction"},
@@ -615,10 +646,11 @@ func (app *ChainlinkApplication) RunJobV2(ctx context.Context, jobID int32, meta
 			FinishedAt:     &t,
 		}, nil, false)
 	} else {
-		runID, _, err = app.pipelineRunner.ExecuteAndInsertFinishedRun(ctx, *jb.PipelineSpec, pipeline.JSONSerializable{
+		meta := pipeline.JSONSerializable{
 			Val:  meta,
 			Null: false,
-		}, *logger.Default, false)
+		}
+		runID, _, err = app.pipelineRunner.ExecuteAndInsertFinishedRun(ctx, *jb.PipelineSpec, nil, meta, *logger.Default, false)
 	}
 	return runID, err
 }
@@ -636,10 +668,6 @@ func (app *ChainlinkApplication) ArchiveJob(ID models.JobID) error {
 		err = errors.Wrapf(err, "failed to delete job with id %s from external initiator", ID)
 	}
 	return multierr.Combine(err, app.Store.ArchiveJob(ID))
-}
-
-func (app *ChainlinkApplication) DeleteJobV2(ctx context.Context, jobID int32) error {
-	return app.jobSpawner.DeleteJob(ctx, jobID)
 }
 
 // AddServiceAgreement adds a Service Agreement which includes a job that needs
@@ -665,18 +693,3 @@ func (app *ChainlinkApplication) AddServiceAgreement(sa *models.ServiceAgreement
 func (app *ChainlinkApplication) NewBox() packr.Box {
 	return packr.NewBox("../../../operator_ui/dist")
 }
-
-type pendingConnectionResumer struct {
-	runManager services.RunManager
-}
-
-func newPendingConnectionResumer(runManager services.RunManager) *pendingConnectionResumer {
-	return &pendingConnectionResumer{runManager: runManager}
-}
-
-func (p *pendingConnectionResumer) Connect(head *models.Head) error {
-	return p.runManager.ResumeAllPendingConnection()
-}
-
-func (p *pendingConnectionResumer) Disconnect()                                    {}
-func (p *pendingConnectionResumer) OnNewLongestChain(context.Context, models.Head) {}

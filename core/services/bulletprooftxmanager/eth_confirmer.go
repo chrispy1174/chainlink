@@ -95,10 +95,6 @@ func (ec *ethConfirmer) Connect(*models.Head) error {
 	return nil
 }
 
-func (ec *ethConfirmer) Disconnect() {
-	// pass
-}
-
 // OnNewLongestChain delivers sampled latest heads to be picked up by the runLoop
 func (ec *ethConfirmer) OnNewLongestChain(ctx context.Context, head models.Head) {
 	ec.mb.Deliver(head)
@@ -108,54 +104,53 @@ func (ec *ethConfirmer) OnNewLongestChain(ctx context.Context, head models.Head)
 }
 
 func (ec *ethConfirmer) Start() error {
-	if !ec.OkayToStart() {
-		return errors.New("EthConfirmer has already been started")
-	}
-	if ec.config.EthGasBumpThreshold() == 0 {
-		logger.Infow("EthConfirmer: Gas bumping is disabled (ETH_GAS_BUMP_THRESHOLD set to 0)", "ethGasBumpThreshold", 0)
-	} else {
-		logger.Infow(fmt.Sprintf("EthConfirmer: Gas bumping is enabled, unconfirmed transactions will have their gas price bumped every %d blocks", ec.config.EthGasBumpThreshold()), "ethGasBumpThreshold", ec.config.EthGasBumpThreshold())
-	}
+	return ec.StartOnce("EthConfirmer", func() error {
 
-	if ec.reaper != nil {
+		if ec.config.EthGasBumpThreshold() == 0 {
+			logger.Infow("EthConfirmer: Gas bumping is disabled (ETH_GAS_BUMP_THRESHOLD set to 0)", "ethGasBumpThreshold", 0)
+		} else {
+			logger.Infow(fmt.Sprintf("EthConfirmer: Gas bumping is enabled, unconfirmed transactions will have their gas price bumped every %d blocks", ec.config.EthGasBumpThreshold()), "ethGasBumpThreshold", ec.config.EthGasBumpThreshold())
+		}
+
+		if ec.reaper != nil {
+			ec.wg.Add(1)
+			ec.reaper.Start()
+		}
+
+		if ec.ethResender != nil {
+			ec.wg.Add(1)
+			ec.ethResender.Start()
+		}
+
 		ec.wg.Add(1)
-		ec.reaper.Start()
-	}
+		go ec.runLoop()
 
-	if ec.ethResender != nil {
-		ec.wg.Add(1)
-		ec.ethResender.Start()
-	}
-
-	ec.wg.Add(1)
-	go ec.runLoop()
-
-	return nil
+		return nil
+	})
 }
 
 func (ec *ethConfirmer) Close() error {
-	if !ec.OkayToStop() {
-		return errors.New("EthConfirmer has already been stopped")
-	}
+	return ec.StopOnce("EthConfirmer", func() error {
 
-	if ec.reaper != nil {
-		go func() {
-			defer ec.wg.Done()
-			ec.reaper.Stop()
-		}()
-	}
+		if ec.reaper != nil {
+			go func() {
+				defer ec.wg.Done()
+				ec.reaper.Stop()
+			}()
+		}
 
-	if ec.ethResender != nil {
-		go func() {
-			defer ec.wg.Done()
-			ec.ethResender.Stop()
-		}()
-	}
+		if ec.ethResender != nil {
+			go func() {
+				defer ec.wg.Done()
+				ec.ethResender.Stop()
+			}()
+		}
 
-	ec.ctxCancel()
-	ec.wg.Wait()
+		ec.ctxCancel()
+		ec.wg.Wait()
 
-	return nil
+		return nil
+	})
 }
 
 func (ec *ethConfirmer) runLoop() {
@@ -215,7 +210,7 @@ func (ec *ethConfirmer) processHead(ctx context.Context, head models.Head) error
 	logger.Debugw("EthConfirmer: finished CheckForReceipts", "headNum", head.Number, "time", time.Since(mark), "id", "eth_confirmer")
 	mark = time.Now()
 
-	keys, err := ec.store.SendKeys()
+	keys, err := ec.store.KeyStore.SendingKeys()
 	if err != nil {
 		return errors.Wrap(err, "could not fetch keys")
 	}
@@ -669,7 +664,9 @@ func (ec *ethConfirmer) rebroadcastWhereNecessary(ctx context.Context, address g
 	if err != nil {
 		return errors.Wrap(err, "FindEthTxsRequiringRebroadcast failed")
 	}
-	logger.Debugf("EthConfirmer: Rebroadcasting %v transactions", len(etxs))
+	if len(etxs) > 0 {
+		logger.Debugf("EthConfirmer: Rebroadcasting %v transactions", len(etxs))
+	}
 	for _, etx := range etxs {
 		// NOTE: This races with OCR transaction insertion that checks for
 		// out-of-eth.  If we check at the wrong moment (while an
@@ -1214,11 +1211,7 @@ func (ec *ethConfirmer) sendEmptyTransaction(ctx context.Context, fromAddress ge
 	if gasLimit == 0 {
 		gasLimit = ec.config.EthGasLimitDefault()
 	}
-	account, err := ec.store.KeyStore.GetAccountByAddress(fromAddress)
-	if err != nil {
-		return gethCommon.Hash{}, errors.Wrap(err, "(ethConfirmer).sendEmptyTransaction failed")
-	}
-	tx, err := sendEmptyTransaction(ec.ethClient, ec.store.KeyStore, uint64(nonce), gasLimit, big.NewInt(int64(gasPriceWei)), account, ec.config.ChainID())
+	tx, err := sendEmptyTransaction(ec.ethClient, ec.store.KeyStore, uint64(nonce), gasLimit, big.NewInt(int64(gasPriceWei)), fromAddress, ec.config.ChainID())
 	if err != nil {
 		return gethCommon.Hash{}, errors.Wrap(err, "(ethConfirmer).sendEmptyTransaction failed")
 	}

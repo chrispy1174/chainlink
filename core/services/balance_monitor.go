@@ -8,6 +8,7 @@ import (
 
 	"github.com/smartcontractkit/chainlink/core/assets"
 	"github.com/smartcontractkit/chainlink/core/logger"
+	httypes "github.com/smartcontractkit/chainlink/core/services/headtracker/types"
 	"github.com/smartcontractkit/chainlink/core/store"
 	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/smartcontractkit/chainlink/core/utils"
@@ -18,7 +19,7 @@ import (
 type (
 	// BalanceMonitor checks the balance for each key on every new head
 	BalanceMonitor interface {
-		store.HeadTrackable
+		httypes.HeadTrackable
 		GetEthBalance(gethCommon.Address) *assets.Eth
 		Stop() error
 	}
@@ -105,7 +106,7 @@ type worker struct {
 }
 
 func (w *worker) Work() {
-	keys, err := w.bm.store.SendKeys()
+	keys, err := w.bm.store.KeyStore.SendingKeys()
 	if err != nil {
 		logger.Error("BalanceMonitor: error getting keys", err)
 	}
