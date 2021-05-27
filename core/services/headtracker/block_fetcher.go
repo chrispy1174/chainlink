@@ -43,7 +43,6 @@ type BlockFetcher struct {
 	logger    *logger.Logger
 	config    BlockFetcherConfig
 
-	inProgress     []BlockDownload
 	recent         map[common.Hash]*Block
 	latestBlockNum int64
 
@@ -89,7 +88,7 @@ func NewBlockFetcher(ethClient eth.Client, config BlockFetcherConfig, logger *lo
 		ethClient: ethClient,
 		logger:    logger,
 		config:    config,
-		recent:    make(map[common.Hash]*Block, 0),
+		recent:    make(map[common.Hash]*Block),
 	}
 }
 
@@ -162,10 +161,10 @@ func (bf *BlockFetcher) StartDownloadAsync(ctx context.Context, fromBlock int64,
 
 	go func() {
 		utils.RetryWithBackoff(ctx, func() (retry bool) {
-			ctx, cancel := context.WithTimeout(ctx, timeout)
+			ctxTimeout, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 
-			err := bf.downloadRange(ctx, fromBlock, toBlock)
+			err := bf.downloadRange(ctxTimeout, fromBlock, toBlock)
 			if err != nil {
 				bf.logger.Errorw("BlockFetcher#StartDownload error while downloading blocks. Will retry",
 					"err", err, "fromBlock", fromBlock, "toBlock", toBlock)
@@ -199,7 +198,7 @@ func (bf *BlockFetcher) GetBlockRange(ctx context.Context, fromBlock int64, toBl
 		return make([]*Block, 0), errors.Errorf("Invalid range: %d -> %d", fromBlock, toBlock)
 	}
 
-	blocks := make(map[int64]*Block, 0)
+	blocks := make(map[int64]*Block)
 
 	err := bf.downloadRange(ctx, fromBlock, toBlock)
 	if err != nil {
@@ -458,8 +457,7 @@ func (bf *BlockFetcher) syncLatestHead(ctx context.Context, head models.Head) (m
 			break
 		}
 		// NOTE: Sequential requests here mean it's a potential performance bottleneck, be aware!
-		var existingBlock *Block
-		existingBlock = bf.findBlockByHash(currentHead.ParentHash)
+		var existingBlock = bf.findBlockByHash(currentHead.ParentHash)
 		if existingBlock != nil {
 			block = *existingBlock
 			bf.logger.Debugf("Found block: %v - %v", block.Number, block.Hash)
