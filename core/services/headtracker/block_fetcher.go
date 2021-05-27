@@ -20,7 +20,6 @@ import (
 
 // BlockFetcherConfig defines the interface for the supplied config
 type BlockFetcherConfig interface {
-	BlockFetcherHistorySize() uint16
 	BlockFetcherBatchSize() uint32
 
 	EthFinalityDepth() uint
@@ -72,17 +71,17 @@ func (bf *BlockFetcher) BlockCache() []*Block {
 
 func NewBlockFetcher(ethClient eth.Client, config BlockFetcherConfig, logger *logger.Logger) *BlockFetcher {
 
-	if config.GasUpdaterBlockHistorySize()+config.GasUpdaterBlockDelay() > config.BlockFetcherHistorySize() {
+	if uint(config.GasUpdaterBlockHistorySize()+config.GasUpdaterBlockDelay()) > config.EthHeadTrackerHistoryDepth() {
 		panic("") //TODO:
 	}
 
 	// rename BlockBackfillDepth to LogBackfillDepth ?
 	// use EthHeadTrackerHistoryDepth
-	if config.EthHeadTrackerHistoryDepth() > uint(config.BlockFetcherHistorySize()) {
-		panic("") //TODO:
-	}
+	//if config.EthHeadTrackerHistoryDepth() > uint(config.BlockFetcherHistorySize()) {
+	//	panic("") //TODO:
+	//}
 
-	if config.BlockBackfillDepth() > uint64(config.BlockFetcherHistorySize()) {
+	if config.BlockBackfillDepth() > uint64(config.EthHeadTrackerHistoryDepth()) {
 		panic("") //TODO:
 	}
 
@@ -95,7 +94,7 @@ func NewBlockFetcher(ethClient eth.Client, config BlockFetcherConfig, logger *lo
 }
 
 func (bf *BlockFetcher) Backfill(ctx context.Context, latestHead models.Head) {
-	from := latestHead.Number - int64(bf.config.BlockFetcherHistorySize()-1)
+	from := latestHead.Number - int64(bf.config.EthHeadTrackerHistoryDepth()-1)
 	if from < 0 {
 		from = 0
 	}
@@ -299,7 +298,7 @@ func (bf *BlockFetcher) cleanRecent() {
 	var blockNumsToDelete []common.Hash
 	for _, b := range bf.recent {
 		block := b
-		if block.Number < bf.latestBlockNum-int64(bf.config.BlockFetcherHistorySize()) {
+		if block.Number < bf.latestBlockNum-int64(bf.config.EthHeadTrackerHistoryDepth()) {
 			blockNumsToDelete = append(blockNumsToDelete, block.Hash)
 		}
 	}
@@ -406,7 +405,7 @@ func (bf *BlockFetcher) syncLatestHead(ctx context.Context, head models.Head) (m
 	bf.syncingMut.Lock()
 	defer bf.syncingMut.Unlock()
 
-	from := head.Number - int64(bf.config.BlockFetcherHistorySize()-1)
+	from := head.Number - int64(bf.config.EthHeadTrackerHistoryDepth()-1)
 	if from < 0 {
 		from = 0
 	}

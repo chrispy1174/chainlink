@@ -67,10 +67,10 @@ func TestBlockFetcher_ConstructsChain(t *testing.T) {
 	ethClient := new(mocks.Client)
 	blockFetcher := headtracker.NewBlockFetcher(ethClient, config, logger)
 
-	block40 := newBlock(40, common.Hash{})
-	block41 := newBlock(41, block40.Hash())
-	block42 := newBlock(42, block41.Hash())
-	h := headFromBlock(block42)
+	block40 := cltest.Block(40, common.Hash{})
+	block41 := cltest.Block(41, block40.Hash())
+	block42 := cltest.Block(42, block41.Hash())
+	h := cltest.HeadFromBlock(block42)
 
 	setupMockCalls(ethClient, []*types.Block{block40, block41, block42})
 
@@ -90,19 +90,4 @@ func setupMockCalls(ethClient *mocks.Client, blocks []*types.Block) {
 			return number.Int64() == block.Number().Int64()
 		})).Return(block, nil)
 	}
-}
-
-func newBlock(number int, parentHash common.Hash) *types.Block {
-	header := &types.Header{
-		Root:       cltest.NewHash(),
-		ParentHash: parentHash,
-		Number:     big.NewInt(int64(number)),
-	}
-	block := types.NewBlock(header, make([]*types.Transaction, 0), make([]*types.Header, 0), make([]*types.Receipt, 0), nil)
-	return block
-}
-
-func headFromBlock(block *types.Block) *models.Head {
-	h := &models.Head{Hash: block.Hash(), Number: block.Number().Int64(), ParentHash: block.ParentHash()}
-	return h
 }

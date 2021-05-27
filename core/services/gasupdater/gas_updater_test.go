@@ -31,7 +31,6 @@ func TestGasUpdater_Start(t *testing.T) {
 		EthFinalityDepthField:           42,
 		BlockBackfillDepthField:         50,
 		BlockFetcherBatchSizeField:      2,
-		BlockFetcherHistorySizeField:    100,
 		EthHeadTrackerHistoryDepthField: 100,
 		GasUpdaterBatchSizeField:        0,
 		GasUpdaterBlockDelayField:       0,

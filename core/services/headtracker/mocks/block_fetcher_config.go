@@ -37,20 +37,6 @@ func (_m *BlockFetcherConfig) BlockFetcherBatchSize() uint32 {
 	return r0
 }
 
-// BlockFetcherHistorySize provides a mock function with given fields:
-func (_m *BlockFetcherConfig) BlockFetcherHistorySize() uint16 {
-	ret := _m.Called()
-
-	var r0 uint16
-	if rf, ok := ret.Get(0).(func() uint16); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(uint16)
-	}
-
-	return r0
-}
-
 // EthHeadTrackerHistoryDepth provides a mock function with given fields:
 func (_m *BlockFetcherConfig) EthHeadTrackerHistoryDepth() uint {
 	ret := _m.Called()

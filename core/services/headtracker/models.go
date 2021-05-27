@@ -117,7 +117,6 @@ type BlockFetcherFakeConfig struct {
 	EthFinalityDepthField                uint
 	BlockBackfillDepthField              uint64
 	BlockFetcherBatchSizeField           uint32
-	BlockFetcherHistorySizeField         uint16
 	EthHeadTrackerHistoryDepthField      uint
 	GasUpdaterBatchSizeField             uint32
 	GasUpdaterBlockDelayField            uint16
@@ -130,7 +129,6 @@ func NewBlockFetcherConfigWithDefaults() *BlockFetcherFakeConfig {
 		EthFinalityDepthField:           42,
 		BlockBackfillDepthField:         50,
 		BlockFetcherBatchSizeField:      2,
-		BlockFetcherHistorySizeField:    100,
 		EthHeadTrackerHistoryDepthField: 100,
 		GasUpdaterBatchSizeField:        0,
 		GasUpdaterBlockDelayField:       0,
@@ -173,11 +171,6 @@ func (config BlockFetcherFakeConfig) BlockBackfillDepth() uint64 {
 // BlockFetcherBatchSize provides a mock function with given fields:
 func (config BlockFetcherFakeConfig) BlockFetcherBatchSize() uint32 {
 	return config.BlockFetcherBatchSizeField
-}
-
-// BlockFetcherHistorySize provides a mock function with given fields:
-func (config BlockFetcherFakeConfig) BlockFetcherHistorySize() uint16 {
-	return config.BlockFetcherHistorySizeField
 }
 
 // EthHeadTrackerHistoryDepth provides a mock function with given fields:

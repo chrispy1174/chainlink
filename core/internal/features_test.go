@@ -133,6 +133,8 @@ func TestIntegration_HttpRequestWithHeaders(t *testing.T) {
 	ethClient.On("PendingNonceAt", mock.Anything, mock.Anything).Maybe().Return(uint64(0), nil)
 	ethClient.On("NonceAt", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(uint64(100), nil)
 	ethClient.On("BalanceAt", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(oneETH.ToInt(), nil)
+	ethClient.On("BatchCallContext", mock.Anything, mock.Anything).Maybe().Return(nil)
+	ethClient.On("FastBlockByHash", mock.Anything, mock.Anything).Maybe().Return(cltest.Block(0, cltest.NewHash()), nil)
 
 	ethClient.On("SendTransaction", mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {

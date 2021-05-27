@@ -1429,6 +1429,21 @@ func Head(val interface{}) *models.Head {
 	return &h
 }
 
+func Block(number int, parentHash common.Hash) *types.Block {
+	header := &types.Header{
+		Root:       NewHash(),
+		ParentHash: parentHash,
+		Number:     big.NewInt(int64(number)),
+	}
+	block := types.NewBlock(header, make([]*types.Transaction, 0), make([]*types.Header, 0), make([]*types.Receipt, 0), nil)
+	return block
+}
+
+func HeadFromBlock(block *types.Block) *models.Head {
+	h := &models.Head{Hash: block.Hash(), Number: block.Number().Int64(), ParentHash: block.ParentHash()}
+	return h
+}
+
 // TransactionsFromGasPrices returns transactions matching the given gas prices
 func TransactionsFromGasPrices(gasPrices ...int64) []headtracker.Transaction {
 	txs := make([]headtracker.Transaction, len(gasPrices))

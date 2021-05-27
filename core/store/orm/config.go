@@ -93,7 +93,6 @@ type (
 		GasUpdaterBlockHistorySize       uint16
 		GasUpdaterEnabled                bool
 		BlockFetcherBatchSize            *uint32
-		BlockFetcherHistorySize          uint16
 		HeadTimeBudget                   time.Duration
 		MinIncomingConfirmations         uint32
 		MinRequiredOutgoingConfirmations uint64
@@ -123,7 +122,6 @@ func init() {
 		GasUpdaterBatchSize:              &defaultGasUpdaterBatchSize,
 		GasUpdaterEnabled:                true,
 		BlockFetcherBatchSize:            &defaultGasUpdaterBatchSize,
-		BlockFetcherHistorySize:          50,
 		HeadTimeBudget:                   13 * time.Second,
 		MinIncomingConfirmations:         3,
 		MinRequiredOutgoingConfirmations: 12,
@@ -167,7 +165,6 @@ func init() {
 		GasUpdaterBatchSize:              &defaultGasUpdaterBatchSize,
 		GasUpdaterEnabled:                true,
 		BlockFetcherBatchSize:            &defaultGasUpdaterBatchSize,
-		BlockFetcherHistorySize:          50,
 		MinIncomingConfirmations:         3,
 		MinRequiredOutgoingConfirmations: 12,
 	}
@@ -192,7 +189,6 @@ func init() {
 		GasUpdaterBatchSize:              &defaultGasUpdaterBatchSize,
 		GasUpdaterEnabled:                true,
 		BlockFetcherBatchSize:            &defaultGasUpdaterBatchSize,
-		BlockFetcherHistorySize:          200,
 		MinIncomingConfirmations:         39, // mainnet * 13 (1s vs 13s block time)
 		MinRequiredOutgoingConfirmations: 39, // mainnet * 13
 	}
@@ -209,7 +205,6 @@ func init() {
 		GasUpdaterBlockHistorySize:       0, // Force an error if someone set GAS_UPDATER_ENABLED=true by accident; we never want to run the gas updater on optimism
 		GasUpdaterEnabled:                false,
 		BlockFetcherBatchSize:            &defaultGasUpdaterBatchSize,
-		BlockFetcherHistorySize:          50, //TODO:  handle GasUpdaterBlockHistorySize being 0
 		MinIncomingConfirmations:         1,
 		MinRequiredOutgoingConfirmations: 0,
 		OptimismGasFees:                  true,
@@ -975,14 +970,6 @@ func (c Config) GasUpdaterBlockHistorySize() uint16 {
 		return uint16(c.viper.GetUint32(EnvVarName("GasUpdaterBlockHistorySize")))
 	}
 	return chainSpecificConfig(c).GasUpdaterBlockHistorySize
-}
-
-//TODO: description
-func (c Config) BlockFetcherHistorySize() uint16 {
-	if c.viper.IsSet(EnvVarName("BlockFetcherHistorySize")) {
-		return uint16(c.viper.GetUint32(EnvVarName("BlockFetcherHistorySize")))
-	}
-	return chainSpecificConfig(c).BlockFetcherHistorySize
 }
 
 // GasUpdaterTransactionPercentile is the percentile gas price to choose. E.g.
