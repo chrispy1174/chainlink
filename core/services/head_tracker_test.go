@@ -783,26 +783,29 @@ func TestHeadTracker_Backfill(t *testing.T) {
 
 func createHeadTracker(logger *logger.Logger, store *strpkg.Store) *headTrackerUniverse {
 	hb := headtracker.NewHeadBroadcaster()
+	bf := headtracker.NewBlockFetcher(store.EthClient, store.Config, logger)
 	return &headTrackerUniverse{
-		headTracker:     services.NewHeadTracker(logger, store, hb),
+		headTracker:     services.NewHeadTracker(logger, store, hb, bf),
 		headBroadcaster: hb,
 	}
 }
 
 func createHeadTrackerWithNeverSleeper(logger *logger.Logger, store *strpkg.Store) *headTrackerUniverse {
 	hb := headtracker.NewHeadBroadcaster()
+	bf := headtracker.NewBlockFetcher(store.EthClient, store.Config, logger)
 	return &headTrackerUniverse{
-		headTracker:     services.NewHeadTracker(logger, store, hb, cltest.NeverSleeper{}),
+		headTracker:     services.NewHeadTracker(logger, store, hb, bf, cltest.NeverSleeper{}),
 		headBroadcaster: hb,
 	}
 }
 
 func createHeadTrackerWithChecker(logger *logger.Logger, store *strpkg.Store, checker httypes.HeadTrackable) *headTrackerUniverse {
 	hb := headtracker.NewHeadBroadcaster()
+	bf := headtracker.NewBlockFetcher(store.EthClient, store.Config, logger)
 	hb.SubscribeUntilClose(checker)
 	hb.Start()
 	return &headTrackerUniverse{
-		headTracker:     services.NewHeadTracker(logger, store, hb, cltest.NeverSleeper{}),
+		headTracker:     services.NewHeadTracker(logger, store, hb, bf, cltest.NeverSleeper{}),
 		headBroadcaster: hb,
 	}
 }

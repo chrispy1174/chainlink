@@ -256,7 +256,6 @@ func (gu *gasUpdater) FetchBlocks(ctx context.Context, head models.Head) error {
 	return nil
 }
 
-
 var (
 	ErrNoSuitableTransactions = errors.New("no suitable transactions")
 )

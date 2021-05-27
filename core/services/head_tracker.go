@@ -41,8 +41,8 @@ type HeadTracker struct {
 	headSaver    *headtracker.HeadSaver
 	blockFetcher *headtracker.BlockFetcher
 
-	chStop       chan struct{}
-	wgDone       *sync.WaitGroup
+	chStop chan struct{}
+	wgDone *sync.WaitGroup
 	utils.StartStopOnce
 }
 
@@ -68,7 +68,7 @@ func NewHeadTracker(
 		samplingMB:      *utils.NewMailbox(1),
 		chStop:          chStop,
 		wgDone:          &wgDone,
-		blockFetcher: blockFetcher,
+		blockFetcher:    blockFetcher,
 		headListener:    headtracker.NewHeadListener(l, store.EthClient, store.Config, chStop, &wgDone, sleepers...),
 		headSaver:       headtracker.NewHeadSaver(store),
 	}

@@ -351,7 +351,7 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 			return nil
 		})
 	}
-	app.HeadTracker = services.NewHeadTracker(headTrackerLogger, store, headBroadcaster, blockFetcher
+	app.HeadTracker = services.NewHeadTracker(headTrackerLogger, store, headBroadcaster, blockFetcher)
 
 	// Log Broadcaster uses the last stored head as a limit of log backfill
 	// which needs to be set before it's started

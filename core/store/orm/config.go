@@ -209,7 +209,7 @@ func init() {
 		GasUpdaterBlockHistorySize:       0, // Force an error if someone set GAS_UPDATER_ENABLED=true by accident; we never want to run the gas updater on optimism
 		GasUpdaterEnabled:                false,
 		BlockFetcherBatchSize:            &defaultGasUpdaterBatchSize,
-		BlockFetcherHistorySize:          50,                     //TODO:  handle GasUpdaterBlockHistorySize being 0
+		BlockFetcherHistorySize:          50, //TODO:  handle GasUpdaterBlockHistorySize being 0
 		MinIncomingConfirmations:         1,
 		MinRequiredOutgoingConfirmations: 0,
 		OptimismGasFees:                  true,

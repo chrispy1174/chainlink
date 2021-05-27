@@ -88,9 +88,10 @@ func (js *spawner) Start() error {
 
 func (js *spawner) Close() error {
 	return js.StopOnce("JobSpawner", func() error {
-	close(js.chStop)
-	<-js.chDone
-	return nil})
+		close(js.chStop)
+		<-js.chDone
+		return nil
+	})
 }
 
 func (js *spawner) destroy() {
