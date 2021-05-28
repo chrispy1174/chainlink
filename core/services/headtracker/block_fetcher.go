@@ -428,13 +428,35 @@ func (bf *BlockFetcher) syncLatestHead(ctx context.Context, head models.Head) (m
 			"toBlockHeight", head.Number)
 	}()
 
-	bf.logger.Debugf("Fetching block by hash: %v", head.Hash)
-	ethBlockPtr, err := bf.ethClient.FastBlockByHash(ctx, head.Hash)
+	// first, check if the previous block already exists locally
+	var existingPrevBlock = bf.findBlockByHash(head.ParentHash)
+	if existingPrevBlock != nil {
+		// if yes, just fetch the latest block
+		block, err := bf.fetchAndSaveBlock(ctx, head.Hash)
+		if err != nil {
+			return models.Head{}, errors.Wrap(err, "Failed to fetch latest block")
+		}
+
+		return bf.sequentialConstructChain(ctx, block, from)
+	} else {
+		// we don't have the previous block or there was a re-org
+
+		blocks, err := bf.GetBlockRange(ctx, from, head.Number)
+		if err != nil {
+			return models.Head{}, errors.Wrap(err, "BlockByNumber failed")
+		}
+		return bf.sequentialConstructChain(ctx, *blocks[len(blocks)-1], from)
+	}
+}
+
+func (bf *BlockFetcher) fetchAndSaveBlock(ctx context.Context, hash common.Hash) (Block, error) {
+	bf.logger.Debugf("Fetching block by hash: %v", hash)
+	ethBlockPtr, err := bf.ethClient.FastBlockByHash(ctx, hash)
 	if ctx.Err() != nil {
-		return models.Head{}, nil
+		return Block{}, nil
 	}
 	if err != nil {
-		return models.Head{}, errors.Wrap(err, "FastBlockByHash failed")
+		return Block{}, errors.Wrap(err, "FastBlockByHash failed")
 	}
 
 	var ethBlock = *ethBlockPtr
@@ -443,8 +465,13 @@ func (bf *BlockFetcher) syncLatestHead(ctx context.Context, head models.Head) (m
 	bf.mut.Lock()
 	bf.recent[block.Hash] = &block
 	bf.mut.Unlock()
+	return block, nil
+}
 
-	var chainTip = head
+func (bf *BlockFetcher) sequentialConstructChain(ctx context.Context, block Block, from int64) (models.Head, error) {
+	fetched := 0
+
+	var chainTip = headFromBlock(block)
 	var currentHead = &chainTip
 
 	bf.logger.Debugf("Latest block: %v, %v", block.Number, block.Hash)
@@ -456,15 +483,15 @@ func (bf *BlockFetcher) syncLatestHead(ctx context.Context, head models.Head) (m
 			bf.logger.Debugf("currentHead.ParentHash is zero - returning")
 			break
 		}
-		// NOTE: Sequential requests here mean it's a potential performance bottleneck, be aware!
 		var existingBlock = bf.findBlockByHash(currentHead.ParentHash)
 		if existingBlock != nil {
 			block = *existingBlock
 			bf.logger.Debugf("Found block: %v - %v", block.Number, block.Hash)
 		} else {
-			bf.logger.Debugf("Fetching BlockByNumber: %v, as existing block was not found by %v", i, head.Hash)
+			bf.logger.Debugf("Fetching BlockByNumber: %v, as existing block was not found by %v", i, currentHead.ParentHash)
+
 			//TODO: perhaps implement FastBlockByNumber
-			ethBlockPtr, err = bf.ethClient.BlockByNumber(ctx, big.NewInt(i))
+			ethBlockPtr, err := bf.ethClient.BlockByNumber(ctx, big.NewInt(i))
 			fetched++
 			if ctx.Err() != nil {
 				break

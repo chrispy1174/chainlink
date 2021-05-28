@@ -88,5 +88,17 @@ func setupMockCalls(ethClient *mocks.Client, blocks []*types.Block) {
 		ethClient.On("BlockByNumber", mock.Anything, mock.MatchedBy(func(number *big.Int) bool {
 			return number.Int64() == block.Number().Int64()
 		})).Return(block, nil)
+
+		ethClient.On("BatchCallContext", mock.Anything, mock.MatchedBy(func(b []rpc.BatchElem) bool {
+			return true // len(b) == 1 &&
+			//	b[0].Method == "eth_getBlockByNumber" && b[0].Args[0] == headtracker.Int64ToHex(43) && b[0].Args[1] == true && reflect.TypeOf(b[0].Result) == reflect.TypeOf(&headtracker.Block{})
+		})).Return(nil).Run(func(args mock.Arguments) {
+			elems := args.Get(1).([]rpc.BatchElem)
+			elems[0].Result = &blocks[0]
+		})
+
+		//ethClient.On("BlockByNumber", mock.Anything, mock.MatchedBy(func(number *big.Int) bool {
+		//	return number.Int64() == block.Number().Int64()
+		//})).Return(block, nil)
 	}
 }
