@@ -282,6 +282,9 @@ func TestIntegration_RunLog(t *testing.T) {
 				}).
 				Return(sub, nil)
 
+			ethClient.On("BatchCallContext", mock.Anything, mock.Anything).Return(nil)
+			ethClient.On("FastBlockByHash", mock.Anything, mock.Anything).Return(nil, nil)
+
 			b := types.NewBlockWithHeader(&types.Header{
 				Number: big.NewInt(100),
 			})
@@ -1039,6 +1042,9 @@ func TestIntegration_FluxMonitor_Deviation(t *testing.T) {
 
 	ethClient.On("SubscribeFilterLogs", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(logsSub, nil)
 	ethClient.On("FilterLogs", mock.Anything, mock.Anything).Maybe().Return([]types.Log{}, nil)
+	ethClient.On("BatchCallContext", mock.Anything, mock.MatchedBy(func(b []rpc.BatchElem) bool {
+		return len(b) != 1
+	})).Return(nil)
 
 	// Initial tx attempt sent
 	ethClient.On("SendTransaction", mock.Anything, mock.Anything).
@@ -1200,6 +1206,9 @@ func TestIntegration_FluxMonitor_NewRound(t *testing.T) {
 	// Send a NewRound log event to trigger a run.
 	log := cltest.LogFromFixture(t, "../testdata/jsonrpc/new_round_log.json")
 	log.Address = job.Initiators[0].InitiatorParams.Address
+	ethClient.On("BatchCallContext", mock.Anything, mock.MatchedBy(func(b []rpc.BatchElem) bool {
+		return len(b) != 1
+	})).Return(nil)
 
 	ethClient.On("SendTransaction", mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
@@ -1280,6 +1289,10 @@ func TestIntegration_MultiwordV1(t *testing.T) {
 				tx.Data()[4:])
 			ethClient.On("TransactionReceipt", mock.Anything, mock.Anything).
 				Return(&types.Receipt{TxHash: tx.Hash(), BlockNumber: big.NewInt(confirmed)}, nil)
+			ethClient.On("BatchCallContext", mock.Anything, mock.MatchedBy(func(b []rpc.BatchElem) bool {
+				return len(b) != 1
+			})).Return(nil)
+
 			ethClient.On("BatchCallContext", mock.Anything, mock.MatchedBy(func(b []rpc.BatchElem) bool {
 				return len(b) == 1 && cltest.BatchElemMatchesHash(b[0], tx.Hash())
 			})).Return(nil).Run(func(args mock.Arguments) {

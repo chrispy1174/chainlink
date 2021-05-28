@@ -93,7 +93,6 @@ type (
 		GasUpdaterBlockHistorySize       uint16
 		GasUpdaterEnabled                bool
 		BlockFetcherBatchSize            *uint32
-		HeadTimeBudget                   time.Duration
 		MinIncomingConfirmations         uint32
 		MinRequiredOutgoingConfirmations uint64
 		OptimismGasFees                  bool
@@ -122,7 +121,6 @@ func init() {
 		GasUpdaterBatchSize:              &defaultGasUpdaterBatchSize,
 		GasUpdaterEnabled:                true,
 		BlockFetcherBatchSize:            &defaultGasUpdaterBatchSize,
-		HeadTimeBudget:                   13 * time.Second,
 		MinIncomingConfirmations:         3,
 		MinRequiredOutgoingConfirmations: 12,
 	}

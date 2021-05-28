@@ -96,7 +96,7 @@ func (hr *HeadBroadcaster) OnNewLongestChain(ctx context.Context, head models.He
 }
 
 func (hr *HeadBroadcaster) SubscribeUntilClose(callback httypes.HeadTrackable) {
-	hr.toUnsubscribe = append(hr.toUnsubscribe, hr.Subscribe(callback))
+
 }
 func (hr *HeadBroadcaster) SubscribeForConnectUntilClose(onConnect func() error) {
 	callback := &httypes.HeadTrackableCallback{OnConnect: onConnect}
@@ -112,11 +112,13 @@ func (hr *HeadBroadcaster) Subscribe(callback httypes.HeadTrackable) (unsubscrib
 		return
 	}
 	hr.callbacks[id] = callback
-	return func() {
+	unsubscribe = func() {
 		hr.mutex.Lock()
 		defer hr.mutex.Unlock()
 		delete(hr.callbacks, id)
 	}
+	hr.toUnsubscribe = append(hr.toUnsubscribe, unsubscribe)
+	return
 }
 
 func (hr *HeadBroadcaster) run() {
