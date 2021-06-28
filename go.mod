@@ -70,7 +70,7 @@ require (
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
 	golang.org/x/text v0.3.6
 	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58
-	gonum.org/v1/gonum v0.9.1
+	gonum.org/v1/gonum v0.9.2
 	gopkg.in/guregu/null.v4 v4.0.0
 	gorm.io/driver/postgres v1.0.8
 	gorm.io/gorm v1.20.12
