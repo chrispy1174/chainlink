@@ -28,7 +28,7 @@
     "typechain": "^4.0.1"
   },
   "devDependencies": {
-    "@types/cbor": "^5.0.1",
+    "@types/cbor": "^6.0.0",
     "@types/chai": "^4.2.11",
     "@types/debug": "^4.1.5",
     "@types/ganache-core": "^2.7.0",
