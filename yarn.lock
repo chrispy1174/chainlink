@@ -2254,6 +2254,11 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
+"@cto.af/textdecoder@^0.0.0":
+  version "0.0.0"
+  resolved "https://registry.npmjs.org/@cto.af/textdecoder/-/textdecoder-0.0.0.tgz#e1e8d84c936c30a0f4619971f19ca41941af9fdc"
+  integrity sha512-sJpx3F5xcVV/9jNYJQtvimo4Vfld/nD3ph+ZWtQzZ03Zo8rJC7QKQTRcIGS13Rcz80DwFNthCWMrd58vpY4ZAQ==
+
 "@cypress/listr-verbose-renderer@0.4.1":
   version "0.4.1"
   resolved "https://registry.npmjs.org/@cypress/listr-verbose-renderer/-/listr-verbose-renderer-0.4.1.tgz#a77492f4b11dcc7c446a34b3e28721afd33c642a"
@@ -4184,12 +4189,12 @@
     "@types/connect" "*"
     "@types/node" "*"
 
-"@types/cbor@^5.0.1":
-  version "5.0.1"
-  resolved "https://registry.npmjs.org/@types/cbor/-/cbor-5.0.1.tgz#e147bbe09ada4db7000ec6c23eafb5f67f5422a5"
-  integrity sha512-zVqJy2KzusZPLOgyGJDnOIbu3DxIGGqxYbEwtEEe4Z+la8jwIhOyb+GMrlHafs5tvKruwf8f8qOYP6zTvse/pw==
+"@types/cbor@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.npmjs.org/@types/cbor/-/cbor-6.0.0.tgz#ddead015e14ef4463287d40cd92a6297a34dac8d"
+  integrity sha512-mGQ1lbYOwVti5Xlarn1bTeBZqgY0kstsdjnkoEovgohYKdBjGejHyNGXHdMBeqyQazIv32Jjp33+5pBEaSRy2w==
   dependencies:
-    "@types/node" "*"
+    cbor "*"
 
 "@types/chai@*":
   version "4.2.18"
@@ -7489,15 +7494,15 @@ caseless@^0.12.0, caseless@~0.12.0:
   resolved "https://registry.npmjs.org/caseless/-/caseless-0.12.0.tgz#1b681c21ff84033c826543090689420d187151dc"
   integrity sha1-G2gcIf+EAzyCZUMJBolCDRhxUdw=
 
-cbor@^5.0.2:
-  version "5.0.2"
-  resolved "https://registry.npmjs.org/cbor/-/cbor-5.0.2.tgz#aa8c3820280ebb9f3a45b2a4c66ac344294443de"
-  integrity sha512-6JiKVURxxO92FntzTJq54QdN/8fBaBwD7+nNyGIAi1HL9mBgU3YK6ULV8k7WTuT/EwfRsjy3MuqDKlkQMCmfXg==
+cbor@*:
+  version "7.0.5"
+  resolved "https://registry.npmjs.org/cbor/-/cbor-7.0.5.tgz#ed54cdbc19fa7352bb328d00a5393aa7ce45a10f"
+  integrity sha512-0aaAPgW92lLmypb9iCd22k7tSD1FbF6dps8VQzmIBKY6ych2gO09b2vo/SbaLTmezJuB8Kh88Rvpl/Uq52mNZg==
   dependencies:
-    bignumber.js "^9.0.0"
-    nofilter "^1.0.3"
+    "@cto.af/textdecoder" "^0.0.0"
+    nofilter "^2.0.3"
 
-cbor@^5.1.0:
+cbor@^5.0.2, cbor@^5.1.0:
   version "5.2.0"
   resolved "https://registry.npmjs.org/cbor/-/cbor-5.2.0.tgz#4cca67783ccd6de7b50ab4ed62636712f287a67c"
   integrity sha512-5IMhi9e1QU76ppa5/ajP1BmMWZ2FHkhAhjeVKQ/EFCgYSEaeVaoGtL7cxJskf9oCCk+XjzaIdc3IuU/dbA/o2A==
@@ -7950,15 +7955,6 @@ cli-width@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/cli-width/-/cli-width-3.0.0.tgz#a2f48437a2caa9a22436e794bf071ec9e61cedf6"
   integrity sha512-FxqpkPPwu1HjuN93Omfm4h8uIanXofW0RxVEW3k5RKx+mJJYSthzNhp32Kzxxy3YAEZ/Dc/EWN1vZRY0+kOhbw==
-
-clipboard@^2.0.0:
-  version "2.0.8"
-  resolved "https://registry.npmjs.org/clipboard/-/clipboard-2.0.8.tgz#ffc6c103dd2967a83005f3f61976aa4655a4cdba"
-  integrity sha512-Y6WO0unAIQp5bLmk1zdThRhgJt/x3ks6f30s3oE3H1mgIEU33XyQjEf8gsf6DxC7NPX8Y1SsNWjUjL/ywLnnbQ==
-  dependencies:
-    good-listener "^1.2.2"
-    select "^1.1.2"
-    tiny-emitter "^2.0.0"
 
 clipboardy@1.2.3:
   version "1.2.3"
@@ -9217,11 +9213,6 @@ delayed-stream@~1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/delayed-stream/-/delayed-stream-1.0.0.tgz#df3ae199acadfb7d440aaae0b29e2272b24ec619"
   integrity sha1-3zrhmayt+31ECqrgsp4icrJOxhk=
-
-delegate@^3.1.2:
-  version "3.2.0"
-  resolved "https://registry.npmjs.org/delegate/-/delegate-3.2.0.tgz#b66b71c3158522e8ab5744f720d8ca0c2af59166"
-  integrity sha512-IofjkYBZaZivn0V8nnsMJGBr4jVLxHDheKSW88PyxS5QC4Vo9ZbZVvhzlSxY87fVq3STR6r+4cGepyHkcWOQSw==
 
 delegates@^1.0.0:
   version "1.0.0"
@@ -12220,13 +12211,6 @@ glogg@^1.0.0:
   integrity sha512-5mwUoSuBk44Y4EshyiqcH95ZntbDdTQqA3QYSrxmzj28Ai0vXBGMH1ApSANH14j2sIRtqCEyg6PfsuP7ElOEDA==
   dependencies:
     sparkles "^1.0.0"
-
-good-listener@^1.2.2:
-  version "1.2.2"
-  resolved "https://registry.npmjs.org/good-listener/-/good-listener-1.2.2.tgz#d53b30cdf9313dffb7dc9a0d477096aa6d145c50"
-  integrity sha1-1TswzfkxPf+33JoNR3CWqm0UXFA=
-  dependencies:
-    delegate "^3.1.2"
 
 got@9.6.0:
   version "9.6.0"
@@ -16315,15 +16299,17 @@ node-sass-tilde-importer@^1.0.2:
   dependencies:
     find-parent-dir "^0.3.0"
 
-nofilter@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.npmjs.org/nofilter/-/nofilter-1.0.3.tgz#34e54b4cc9757de0cad38cc0d19462489b1b7f5d"
-  integrity sha512-FlUlqwRK6reQCaFLAhMcF+6VkVG2caYjKQY3YsRDTl4/SEch595Qb3oLjJRDr8dkHAAOVj2pOx3VknfnSgkE5g==
-
 nofilter@^1.0.4:
   version "1.0.4"
   resolved "https://registry.npmjs.org/nofilter/-/nofilter-1.0.4.tgz#78d6f4b6a613e7ced8b015cec534625f7667006e"
   integrity sha512-N8lidFp+fCz+TD51+haYdbDGrcBWwuHX40F5+z0qkUjMJ5Tp+rdSuAkMJ9N9eoolDlEVTf6u5icM+cNKkKW2mA==
+
+nofilter@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.npmjs.org/nofilter/-/nofilter-2.0.3.tgz#f5460f3cb33147005883e3f5d4476239501fa187"
+  integrity sha512-FbuXC+lK+GU2+63D1kC1ETiZo+Z7SIi7B+mxKTCH1byrh6WFvfBCN/wpherFz0a0bjGd7EKTst/cz0yLeNngug==
+  dependencies:
+    "@cto.af/textdecoder" "^0.0.0"
 
 noop-logger@^0.1.1:
   version "0.1.1"
@@ -17503,11 +17489,9 @@ printj@~1.1.0:
   integrity sha512-zA2SmoLaxZyArQTOPj5LXecR+RagfPSU5Kw1qP+jkWeNlrq+eJZyY2oS68SU1Z/7/myXM4lo9716laOFAVStCQ==
 
 prismjs@^1.21.0:
-  version "1.23.0"
-  resolved "https://registry.npmjs.org/prismjs/-/prismjs-1.23.0.tgz#d3b3967f7d72440690497652a9d40ff046067f33"
-  integrity sha512-c29LVsqOaLbBHuIbsTxaKENh1N2EQBOHaWv7gkHN4dgRbxSREqDnDbtFJYdpPauS4YCplMSNCABQ6Eeor69bAA==
-  optionalDependencies:
-    clipboard "^2.0.0"
+  version "1.24.0"
+  resolved "https://registry.npmjs.org/prismjs/-/prismjs-1.24.0.tgz#0409c30068a6c52c89ef7f1089b3ca4de56be2ac"
+  integrity sha512-SqV5GRsNqnzCL8k5dfAjCNhUrF3pR0A9lTDSCUZeh/LIshheXJEaP0hwLz2t4XHivd2J/v2HR+gRnigzeKe3cQ==
 
 private@^0.1.6, private@^0.1.8:
   version "0.1.8"
@@ -19034,11 +19018,6 @@ select-hose@^2.0.0:
   resolved "https://registry.npmjs.org/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
   integrity sha1-Yl2GWPhlr0Psliv8N2o3NZpJlMo=
 
-select@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.npmjs.org/select/-/select-1.1.2.tgz#0e7350acdec80b1108528786ec1d4418d11b396d"
-  integrity sha1-DnNQrN7ICxEIUoeG7B1EGNEbOW0=
-
 selfsigned@^1.10.8:
   version "1.10.8"
   resolved "https://registry.npmjs.org/selfsigned/-/selfsigned-1.10.8.tgz#0d17208b7d12c33f8eac85c41835f27fc3d81a30"
@@ -20414,11 +20393,6 @@ timers-browserify@^2.0.4:
   integrity sha512-60aV6sgJ5YEbzUdn9c8kYGIqOubPoUdqQCul3SBAsRCZ40s6Y5cMcrW4dt3/k/EsbLVJNl9n6Vz3fTc+k2GeKQ==
   dependencies:
     setimmediate "^1.0.4"
-
-tiny-emitter@^2.0.0:
-  version "2.1.0"
-  resolved "https://registry.npmjs.org/tiny-emitter/-/tiny-emitter-2.1.0.tgz#1d1a56edfc51c43e863cbb5382a72330e3555423"
-  integrity sha512-NB6Dk1A9xgQPMoGqC5CVXn123gWyte215ONT5Pp5a0yt4nlEoO1ZWeCwpncaekPHXO60i47ihFnZPiRPjRMq4Q==
 
 tiny-invariant@^1.0.2:
   version "1.0.6"
@@ -23038,9 +23012,9 @@ yallist@^4.0.0:
   integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
 
 yargs-parser@13.1.2, yargs-parser@20.x, yargs-parser@^13.1.2, yargs-parser@^15.0.1, yargs-parser@^18.1.1, yargs-parser@^18.1.2, yargs-parser@^5.0.0, yargs-parser@^8.1.0, yargs-parser@^9.0.2:
-  version "15.0.1"
-  resolved "https://registry.npmjs.org/yargs-parser/-/yargs-parser-15.0.1.tgz#54786af40b820dcb2fb8025b11b4d659d76323b3"
-  integrity sha512-0OAMV2mAZQrs3FkNpDQcBk1x5HXb8X4twADss4S0Iuk+2dGnLOE/fRHrsYm542GduMveyA77OF4wrNJuanRCWw==
+  version "15.0.3"
+  resolved "https://registry.npmjs.org/yargs-parser/-/yargs-parser-15.0.3.tgz#316e263d5febe8b38eef61ac092b33dfcc9b1115"
+  integrity sha512-/MVEVjTXy/cGAjdtQf8dW3V9b97bPN7rNn8ETj6BmAQL7ibC7O1Q9SPJbGjgh3SlwoBNXMzj/ZGIj8mBgl12YA==
   dependencies:
     camelcase "^5.0.0"
     decamelize "^1.2.0"
