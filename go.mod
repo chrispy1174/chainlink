@@ -12,7 +12,7 @@ require (
 	github.com/coreos/go-semver v0.3.0
 	github.com/danielkov/gin-helmet v0.0.0-20171108135313-1387e224435e
 	github.com/ethereum/go-ethereum v1.10.2
-	github.com/fatih/color v1.10.0
+	github.com/fatih/color v1.13.0
 	github.com/fxamacker/cbor/v2 v2.2.0
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-contrib/expvar v0.0.0-20181230111036-f23b556cc79f
@@ -66,7 +66,6 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
 	golang.org/x/text v0.3.6
 	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58
