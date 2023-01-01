@@ -18,7 +18,7 @@ require (
 	github.com/gin-contrib/expvar v0.0.0-20181230111036-f23b556cc79f
 	github.com/gin-contrib/size v0.0.0-20190528085907-355431950c57
 	github.com/gin-gonic/contrib v0.0.0-20190526021735-7fb7810ed2a0
-	github.com/gin-gonic/gin v1.6.0
+	github.com/gin-gonic/gin v1.8.2
 	github.com/gobuffalo/packr v1.30.1
 	github.com/gofrs/uuid v3.4.0+incompatible
 	github.com/google/uuid v1.2.0
@@ -52,7 +52,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/smartcontractkit/libocr v0.0.0-20210507173830-a9684351c102
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.1
 	github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5
 	github.com/tidwall/gjson v1.7.5
 	github.com/tidwall/sjson v1.1.6
@@ -64,12 +64,11 @@ require (
 	go.uber.org/atomic v1.7.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
-	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
-	golang.org/x/text v0.3.6
-	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
+	golang.org/x/term v0.3.0
+	golang.org/x/text v0.5.0
+	golang.org/x/tools v0.1.12
 	gonum.org/v1/gonum v0.9.1
 	gopkg.in/guregu/null.v4 v4.0.0
 	gorm.io/driver/postgres v1.0.8
